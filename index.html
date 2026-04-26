@@ -111,6 +111,7 @@
             padding: 10px 16px;
             border-radius: 48px;
             margin: 1rem 0;
+            flex-wrap: wrap;
         }
         .checkbox-row input {
             width: 22px;
@@ -122,6 +123,20 @@
             margin: 0;
             font-weight: 500;
             cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .checkbox-row a {
+            color: #f5b042;
+            text-decoration: none;
+            font-weight: 600;
+            border-bottom: 1px dashed #f5b042;
+        }
+        .checkbox-row a:hover {
+            color: #d97706;
+            border-bottom-style: solid;
         }
         .radio-group {
             background: #f8fafc;
@@ -300,7 +315,6 @@
 <div class="card">
     <h1>Манипулятор • расчёт</h1>
     <div class="sub">
-        💰 Базовая ставка + пробег 85 ₽/км<br>
         ⚙️ Выберите условия ниже
     </div>
 
@@ -313,15 +327,18 @@
         </div>
     </div>
 
-    <!-- Чекбокс режима "С рынка" -->
+    <!-- Чекбокс режима "С рынка" с кликабельным "Бабаиха" -->
     <div class="checkbox-row">
         <input type="checkbox" id="marketModeCheckbox">
-        <label>🏪 Погрузка с места базирования (строительный рынок)</label>
+        <label>
+            🏪 Погрузка с места базирования (строительный рынок 
+            <a href="https://yandex.ru/maps/?pt=37.347249,56.099172&z=17&l=map" target="_blank" rel="noopener noreferrer">Бабаиха</a>)
+        </label>
     </div>
 
-    <!-- Плечо -->
+    <!-- Плечо — убрано (база → погрузка) -->
     <div class="input-group" id="armGroup">
-        <label><i>🏭</i> Плечо (база → погрузка), км</label>
+        <label><i>🏭</i> Плечо, км</label>
         <div class="slider-row">
             <input type="range" id="armSlider" min="0" max="300" step="5" value="0">
             <div class="value-display" id="armValue">0 км</div>
@@ -372,7 +389,7 @@
         </div>
     </div>
 
-    <!-- Спойлер для примечания (*) -->
+    <!-- Спойлер для примечания -->
     <details class="note-spoiler">
         <summary>ℹ️ Детали расчёта (справочно)</summary>
         <div class="note-content">
@@ -383,7 +400,6 @@
     </details>
 </div>
 
-<!-- Всплывающее уведомление для копирования -->
 <div id="toast" class="toast">Номер скопирован</div>
 
 <script>
@@ -492,7 +508,6 @@
         document.getElementById('fuelInfo').innerHTML = fuelInfoHtml;
     }
 
-    // События
     const sliders = ['distanceSlider', 'armSlider', 'extraFuelSlider'];
     sliders.forEach(id => {
         const slider = document.getElementById(id);
@@ -506,7 +521,6 @@
     document.getElementById('marketModeCheckbox').addEventListener('change', updateUI);
     document.getElementById('calcBtn').addEventListener('click', updateUI);
 
-    // Кнопка копирования номера
     document.getElementById('copyPhoneBtn').addEventListener('click', copyPhoneNumber);
 
     updateUI();
