@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>Манипулятор: расчёт стоимости</title>
+    <title>Манипулятор: расчёт стоимости (с возвратным плечом)</title>
     <style>
         * {
             box-sizing: border-box;
@@ -336,12 +336,21 @@
         </label>
     </div>
 
-    <!-- Плечо — убрано (база → погрузка) -->
-    <div class="input-group" id="armGroup">
-        <label><i>🏭</i> Плечо, км</label>
+    <!-- Плечо туда -->
+    <div class="input-group" id="armThereGroup">
+        <label><i>🏭</i> Плечо (база → погрузка), км</label>
         <div class="slider-row">
-            <input type="range" id="armSlider" min="0" max="300" step="5" value="0">
-            <div class="value-display" id="armValue">0 км</div>
+            <input type="range" id="armThereSlider" min="0" max="300" step="5" value="0">
+            <div class="value-display" id="armThereValue">0 км</div>
+        </div>
+    </div>
+
+    <!-- Плечо обратное (возвратное) -->
+    <div class="input-group" id="armBackGroup">
+        <label><i>🔄</i> Плечо возвратное (выгрузка → база), км</label>
+        <div class="slider-row">
+            <input type="range" id="armBackSlider" min="0" max="300" step="5" value="0">
+            <div class="value-display" id="armBackValue">0 км</div>
         </div>
     </div>
 
@@ -382,7 +391,6 @@
 
     <div class="result">
         <div class="total-cost" id="totalPrice">— <span>₽</span></div>
-        <!-- Контакт водителя с кнопкой копирования -->
         <div class="driver-contact">
             <span class="driver-text">📞 Связаться с водителем: +7 937 148-55-65</span>
             <button class="copy-btn" id="copyPhoneBtn">📋 Копировать номер</button>
@@ -393,8 +401,8 @@
     <details class="note-spoiler">
         <summary>ℹ️ Детали расчёта (справочно)</summary>
         <div class="note-content">
-            * Обычный режим: цена = выбранная ставка ПРР + (плечо + расстояние) × 85 ₽.<br>
-            Режим «С рынка»: цена = тариф (8000₽ за 15 км +2000₽/15км) + стоимость топлива на пробег (только при расстоянии > 30 км).<br>
+            * Обычный режим: цена = выбранная ставка ПРР + (плечо_туда + расстояние + плечо_обратно) × 85 ₽.<br>
+            Режим «С рынка»: плечи не учитываются, цена = тариф (8000₽ за 15 км +2000₽/15км) + стоимость топлива на пробег (только при расстоянии > 30 км).<br>
             Расход топлива: 35 л/100 км, цена 76 ₽/л. Доп. расход на ПРР в режиме «С рынка» не учитывается.
         </div>
     </details>
@@ -447,28 +455,36 @@
         const marketMode = document.getElementById('marketModeCheckbox').checked;
         let distance = parseInt(document.getElementById('distanceSlider').value, 10);
 
-        const armSlider = document.getElementById('armSlider');
-        const armGroup = document.getElementById('armGroup');
+        const armThereSlider = document.getElementById('armThereSlider');
+        const armBackSlider = document.getElementById('armBackSlider');
+        const armThereGroup = document.getElementById('armThereGroup');
+        const armBackGroup = document.getElementById('armBackGroup');
         const prrGroup = document.getElementById('prrGroup');
         const radios = document.querySelectorAll('input[name="prr_type"]');
 
         if (marketMode) {
-            armSlider.disabled = true;
-            armGroup.style.opacity = '0.5';
+            armThereSlider.disabled = true;
+            armBackSlider.disabled = true;
+            armThereGroup.style.opacity = '0.5';
+            armBackGroup.style.opacity = '0.5';
             prrGroup.classList.add('disabled-radio');
             radios.forEach(r => r.disabled = true);
         } else {
-            armSlider.disabled = false;
-            armGroup.style.opacity = '1';
+            armThereSlider.disabled = false;
+            armBackSlider.disabled = false;
+            armThereGroup.style.opacity = '1';
+            armBackGroup.style.opacity = '1';
             prrGroup.classList.remove('disabled-radio');
             radios.forEach(r => r.disabled = false);
         }
 
-        let arm = marketMode ? 0 : parseInt(document.getElementById('armSlider').value, 10);
+        let armThere = marketMode ? 0 : parseInt(armThereSlider.value, 10);
+        let armBack = marketMode ? 0 : parseInt(armBackSlider.value, 10);
         let extraFuel = parseInt(document.getElementById('extraFuelSlider').value, 10);
 
         document.getElementById('distanceValue').innerText = distance + ' км';
-        document.getElementById('armValue').innerText = (marketMode ? 0 : arm) + ' км';
+        document.getElementById('armThereValue').innerText = (marketMode ? 0 : armThere) + ' км';
+        document.getElementById('armBackValue').innerText = (marketMode ? 0 : armBack) + ' км';
         document.getElementById('extraFuelValue').innerText = extraFuel + ' л';
 
         let exactPrice;
@@ -485,7 +501,7 @@
                 exactPrice = tariff;
             }
         } else {
-            totalKm = arm + distance;
+            totalKm = armThere + distance + armBack;
             const basePrice = getBasePriceNormal();
             exactPrice = basePrice + totalKm * COST_PER_KM;
         }
@@ -493,6 +509,7 @@
         const roundedPrice = roundUpToStep(exactPrice, ROUND_STEP);
         document.getElementById('totalPrice').innerHTML = `${roundedPrice.toFixed(0)} <span>₽</span>`;
 
+        // Информационный блок топлива (полный расход, с extraFuel)
         const driveLitersInfo = (totalKm / 100) * FUEL_PER_100KM;
         const totalLitersInfo = driveLitersInfo + extraFuel;
         const totalFuelRubInfo = totalLitersInfo * FUEL_PRICE;
@@ -508,7 +525,8 @@
         document.getElementById('fuelInfo').innerHTML = fuelInfoHtml;
     }
 
-    const sliders = ['distanceSlider', 'armSlider', 'extraFuelSlider'];
+    // События
+    const sliders = ['distanceSlider', 'armThereSlider', 'armBackSlider', 'extraFuelSlider'];
     sliders.forEach(id => {
         const slider = document.getElementById(id);
         slider.addEventListener('input', updateUI);
@@ -520,7 +538,6 @@
 
     document.getElementById('marketModeCheckbox').addEventListener('change', updateUI);
     document.getElementById('calcBtn').addEventListener('click', updateUI);
-
     document.getElementById('copyPhoneBtn').addEventListener('click', copyPhoneNumber);
 
     updateUI();
