@@ -4,390 +4,162 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Манипулятор • расчёт стоимости перевозки</title>
-    <!-- Фавикон: мини-грузовичок (SVG) -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%231e2f5e'/%3E%3Cpath fill='%23f5b042' d='M20,60 L30,60 L30,45 L45,45 L45,60 L55,60 L55,40 L75,40 L75,60 L85,60 L85,70 L20,70 Z'/%3E%3Ccircle cx='35' cy='75' r='8' fill='%23333'/%3E%3Ccircle cx='70' cy='75' r='8' fill='%23333'/%3E%3Crect x='48' y='50' width='8' height='10' fill='%23fff'/%3E%3C/svg%3E">
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
-        }
-        body {
-            background: linear-gradient(145deg, #e0eafc 0%, #cfdef3 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 0;
-            padding: 20px;
-        }
-        .card {
-            max-width: 620px;
-            width: 100%;
-            background: rgba(255,255,255,0.96);
-            backdrop-filter: blur(2px);
-            border-radius: 48px;
-            box-shadow: 0 25px 45px -12px rgba(0,0,0,0.35), 0 4px 12px rgba(0,0,0,0.1);
-            padding: 1.8rem 2rem 2.2rem;
-        }
-        h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin-top: 0;
-            margin-bottom: 0.25rem;
-            color: #1e2f5e;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        h1::before {
-            content: "🚛";
-            font-size: 1.8rem;
-        }
-        .sub {
-            color: #2c3e66;
-            border-left: 4px solid #f5b042;
-            padding-left: 14px;
-            margin: 0.4rem 0 1.2rem 0;
-            font-weight: 500;
-            font-size: 0.85rem;
-            background: #fef5e8;
-            border-radius: 20px;
-            line-height: 1.3;
-        }
-        .input-group {
-            margin-bottom: 1.5rem;
-        }
-        label {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 600;
-            color: #1e2f5e;
-            margin-bottom: 8px;
-            font-size: 0.95rem;
-        }
-        .slider-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        input[type="range"] {
-            flex: 3;
-            min-width: 150px;
-            height: 6px;
-            border-radius: 10px;
-            -webkit-appearance: none;
-            background: #cbd5e1;
-        }
-        input[type="range"]:focus {
-            outline: none;
-        }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #f5b042;
-            cursor: pointer;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-            border: none;
-        }
-        .value-display {
-            flex: 1;
-            min-width: 70px;
-            background: white;
-            border: 2px solid #cbd5e1;
-            border-radius: 40px;
-            padding: 8px 12px;
-            text-align: center;
-            font-weight: 600;
-            font-size: 1rem;
-            color: #1e2f5e;
-        }
-        .checkbox-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            background: #f8fafc;
-            padding: 10px 16px;
-            border-radius: 48px;
-            margin: 1rem 0;
-            flex-wrap: wrap;
-        }
-        .checkbox-row input {
-            width: 22px;
-            height: 22px;
-            margin: 0;
-            accent-color: #f5b042;
-        }
-        .checkbox-row label {
-            margin: 0;
-            font-weight: 500;
-            cursor: pointer;
+        * { box-sizing: border-box; font-family: system-ui, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif; }
+        body { background: linear-gradient(145deg, #e0eafc 0%, #cfdef3 100%); min-height: 100vh; display: flex; justify-content: center; align-items: center; margin: 0; padding: 20px; }
+        .card { max-width: 680px; width: 100%; background: rgba(255,255,255,0.96); backdrop-filter: blur(2px); border-radius: 48px; box-shadow: 0 25px 45px -12px rgba(0,0,0,0.35), 0 4px 12px rgba(0,0,0,0.1); padding: 1.8rem 2rem 2.2rem; }
+        h1 { font-size: 1.8rem; font-weight: 700; margin-top: 0; margin-bottom: 0.25rem; color: #1e2f5e; display: flex; align-items: center; gap: 8px; }
+        h1::before { content: "🚛"; font-size: 1.8rem; }
+        .tabs { display: flex; gap: 8px; margin-bottom: 1.8rem; border-bottom: 2px solid #e2e8f0; }
+        .tab-btn { background: none; border: none; padding: 12px 20px; font-size: 1rem; font-weight: 600; color: #4a5b7a; cursor: pointer; border-radius: 40px 40px 0 0; transition: 0.2s; margin: 0; box-shadow: none; transform: none; width: auto; }
+        .tab-btn.active { background: #f0f4fe; color: #1e2f5e; border-bottom: 3px solid #f5b042; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .input-group { margin-bottom: 1.5rem; }
+        label { display: flex; align-items: center; gap: 8px; font-weight: 600; color: #1e2f5e; margin-bottom: 8px; font-size: 0.95rem; }
+        .slider-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; position: relative; }
+        input[type="range"] { flex: 2; min-width: 130px; height: 6px; border-radius: 10px; -webkit-appearance: none; background: #cbd5e1; }
+        input[type="range"]:focus { outline: none; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #f5b042; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.2); border: none; }
+        .number-input { flex: 1; min-width: 80px; background: white; border: 2px solid #cbd5e1; border-radius: 40px; padding: 8px 12px; text-align: center; font-weight: 600; font-size: 1rem; color: #1e2f5e; -moz-appearance: textfield; }
+        .fuel-icon {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
-        .checkbox-row a {
-            color: #f5b042;
-            text-decoration: none;
-            font-weight: 600;
-            border-bottom: 1px dashed #f5b042;
-        }
-        .checkbox-row a:hover {
-            color: #d97706;
-            border-bottom-style: solid;
-        }
-        .radio-group {
-            background: #f8fafc;
-            border-radius: 32px;
-            padding: 0.8rem 1.2rem;
-            margin-bottom: 1.2rem;
-        }
-        .radio-group p {
-            margin: 0 0 8px 0;
-            font-weight: 600;
-            color: #1e2f5e;
-        }
-        .radio-option {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin: 8px 0;
-        }
-        .radio-option input {
-            width: 18px;
-            height: 18px;
-            accent-color: #f5b042;
-            margin: 0;
-        }
-        .radio-option label {
-            margin: 0;
-            font-weight: 500;
-            cursor: pointer;
-        }
-        .disabled-radio {
-            opacity: 0.6;
-            pointer-events: none;
-        }
-        button {
-            background: #1e2f5e;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            font-size: 1rem;
-            font-weight: 600;
-            border-radius: 40px;
-            width: 100%;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: flex;
             justify-content: center;
-            align-items: center;
-            gap: 10px;
-            margin: 0.5rem 0 1.2rem;
-            box-shadow: 0 4px 0 #0f1a36;
-            transform: translateY(-2px);
+            font-size: 1.3rem;
+            cursor: help;
+            margin-left: 8px;
+            position: relative;
         }
-        button:active {
-            transform: translateY(2px);
-            box-shadow: 0 1px 0 #0f1a36;
-        }
-        .result {
-            background: #f0f4fe;
-            border-radius: 36px;
-            padding: 1.2rem 1.4rem;
-            text-align: center;
-        }
-        .total-cost {
-            font-size: 2.5rem;
-            font-weight: 800;
-            color: #1e2f5e;
-            word-break: break-word;
-        }
-        .total-cost span {
-            font-size: 1.1rem;
-            font-weight: 500;
-            color: #4a5b7a;
-        }
-        .driver-contact {
-            margin-top: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 10px;
-            background: #e6f0ff;
-            padding: 8px 16px;
-            border-radius: 40px;
-        }
-        .driver-text {
-            font-size: 1rem;
-            font-weight: 500;
-            color: #1e2f5e;
-        }
-        .copy-btn {
-            background: #1e2f5e;
-            border: none;
-            color: white;
-            padding: 6px 14px;
-            border-radius: 30px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            margin: 0;
-            box-shadow: none;
-            transform: none;
-            width: auto;
-        }
-        .copy-btn:active {
-            transform: scale(0.96);
-        }
-        .toast {
-            position: fixed;
-            bottom: 30px;
+        .fuel-icon:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 130%;
             left: 50%;
             transform: translateX(-50%);
             background: #1e2f5e;
             color: white;
-            padding: 8px 20px;
-            border-radius: 40px;
-            font-size: 0.85rem;
-            z-index: 1000;
-            opacity: 0;
-            transition: opacity 0.2s;
+            font-size: 0.75rem;
+            font-weight: normal;
+            padding: 6px 12px;
+            border-radius: 20px;
+            white-space: nowrap;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
             pointer-events: none;
+            font-family: system-ui, sans-serif;
         }
-        details {
-            margin-top: 1rem;
-            background: #f9fafb;
-            border-radius: 32px;
-            padding: 0.5rem 1rem;
-            cursor: pointer;
+        .fuel-icon:hover::before {
+            content: '';
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 6px;
+            border-style: solid;
+            border-color: #1e2f5e transparent transparent transparent;
+            z-index: 100;
         }
-        summary {
-            font-weight: 600;
-            color: #1e2f5e;
-            outline: none;
-            padding: 0.5rem 0;
-        }
-        .fuel-info {
-            background: #eef2ff;
-            border-radius: 28px;
-            padding: 12px 16px;
-            margin-top: 14px;
-            font-size: 0.85rem;
-            border-left: 4px solid #f5b042;
-            text-align: left;
-        }
-        .fuel-info p {
-            margin: 6px 0;
-        }
-        .note-spoiler {
-            margin-top: 1rem;
-            background: #f9fafb;
-            border-radius: 32px;
-            padding: 0.5rem 1rem;
-        }
-        .note-spoiler summary {
-            font-size: 0.8rem;
-            color: #5f6f8a;
-        }
-        .note-content {
-            font-size: 0.7rem;
-            color: #5f6f8a;
-            padding: 0.5rem 0;
-        }
-        @media (max-width: 520px) {
-            .card { padding: 1.2rem; }
-            .total-cost { font-size: 2rem; }
-            .slider-row { flex-direction: column; align-items: stretch; }
-            .value-display { text-align: center; }
-            .driver-contact { flex-direction: column; }
-        }
+        .checkbox-row { display: flex; align-items: center; gap: 12px; background: #f8fafc; padding: 10px 16px; border-radius: 48px; margin: 1rem 0; flex-wrap: wrap; }
+        .checkbox-row input { width: 22px; height: 22px; margin: 0; accent-color: #f5b042; }
+        .checkbox-row label { margin: 0; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .checkbox-row a { color: #f5b042; text-decoration: none; font-weight: 600; border-bottom: 1px dashed #f5b042; }
+        .radio-group { background: #f8fafc; border-radius: 32px; padding: 0.8rem 1.2rem; margin-bottom: 1.2rem; }
+        .radio-group p { margin: 0 0 8px 0; font-weight: 600; color: #1e2f5e; }
+        .radio-option { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+        .radio-option input { width: 18px; height: 18px; accent-color: #f5b042; margin: 0; }
+        .radio-option label { margin: 0; font-weight: 500; cursor: pointer; }
+        .disabled-radio { opacity: 0.6; pointer-events: none; }
+        button { background: #1e2f5e; color: white; border: none; padding: 12px 20px; font-size: 1rem; font-weight: 600; border-radius: 40px; width: 100%; cursor: pointer; transition: all 0.2s; display: flex; justify-content: center; align-items: center; gap: 10px; margin: 0.5rem 0 1.2rem; box-shadow: 0 4px 0 #0f1a36; transform: translateY(-2px); }
+        button:active { transform: translateY(2px); box-shadow: 0 1px 0 #0f1a36; }
+        .result { background: #f0f4fe; border-radius: 36px; padding: 1.2rem 1.4rem; text-align: center; }
+        .total-cost { font-size: 2.5rem; font-weight: 800; color: #1e2f5e; word-break: break-word; }
+        .total-cost span { font-size: 1.1rem; font-weight: 500; color: #4a5b7a; }
+        .driver-contact { margin-top: 16px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 10px; background: #e6f0ff; padding: 8px 16px; border-radius: 40px; }
+        .copy-btn { background: #1e2f5e; border: none; color: white; padding: 6px 14px; border-radius: 30px; font-size: 0.8rem; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin: 0; box-shadow: none; transform: none; width: auto; }
+        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1e2f5e; color: white; padding: 8px 20px; border-radius: 40px; font-size: 0.85rem; z-index: 1000; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+        .multistop-counter { display: flex; flex-direction: column; align-items: center; gap: 12px; background: #f8fafc; padding: 16px; border-radius: 48px; margin-top: 1rem; }
+        .counter-controls { display: flex; align-items: center; justify-content: center; gap: 20px; }
+        .counter-controls button { width: auto; margin: 0; padding: 8px 20px; background: #f5b042; color: #1e2f5e; box-shadow: none; font-weight: bold; font-size: 1.2rem; }
+        .counter-controls span { font-size: 1.6rem; font-weight: 700; min-width: 50px; text-align: center; }
+        .multistop-counter .label { font-weight: 600; color: #1e2f5e; }
+        @media (max-width: 550px) { .card { padding: 1.2rem; } .total-cost { font-size: 2rem; } .slider-row { flex-direction: column; align-items: stretch; } .tab-btn { padding: 8px 12px; font-size: 0.9rem; } .fuel-icon:hover::after { white-space: normal; width: 200px; text-align: center; } }
     </style>
 </head>
 <body>
 <div class="card">
     <h1>Манипулятор • расчёт</h1>
-    <div class="sub">
-        ⚙️ Выберите условия ниже
+    
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="single">🚚 Одиночный рейс</button>
+        <button class="tab-btn" data-tab="multi">🔄 Мультимаршрут</button>
     </div>
 
-    <!-- Расстояние -->
-    <div class="input-group">
-        <label><i>📍</i> Расстояние (погрузка→выгрузка), км</label>
-        <div class="slider-row">
-            <input type="range" id="distanceSlider" min="0" max="300" step="5" value="0">
-            <div class="value-display" id="distanceValue">0 км</div>
-        </div>
-    </div>
+    <!-- Вкладка 1: Одиночный рейс -->
+    <div id="singleTab" class="tab-content active">
+        <div class="sub">⚙️ Условия одиночной перевозки</div>
 
-    <!-- Чекбокс режима "С рынка" -->
-    <div class="checkbox-row">
-        <input type="checkbox" id="marketModeCheckbox">
-        <label>
-            🏪 Погрузка с места базирования (строительный рынок 
-            <a href="https://yandex.ru/maps/?pt=37.347249,56.099172&z=17&l=map" target="_blank" rel="noopener noreferrer">Бабаиха</a>)
-        </label>
-    </div>
-
-    <!-- Плечо туда -->
-    <div class="input-group" id="armThereGroup">
-        <label><i>🏭</i> Плечо (база → погрузка), км</label>
-        <div class="slider-row">
-            <input type="range" id="armThereSlider" min="0" max="300" step="5" value="0">
-            <div class="value-display" id="armThereValue">0 км</div>
-        </div>
-    </div>
-
-    <!-- Плечо возвратное -->
-    <div class="input-group" id="armBackGroup">
-        <label><i>🔄</i> Плечо возвратное (выгрузка → база), км</label>
-        <div class="slider-row">
-            <input type="range" id="armBackSlider" min="0" max="300" step="5" value="0">
-            <div class="value-display" id="armBackValue">0 км</div>
-        </div>
-    </div>
-
-    <!-- Условия ПРР -->
-    <div class="radio-group" id="prrGroup">
-        <p>🧰 Условия погрузки/разгрузки:</p>
-        <div class="radio-option">
-            <input type="radio" id="prr_self" name="prr_type" value="8000" checked>
-            <label for="prr_self">Погрузка и выгрузка манипулятором</label>
-        </div>
-        <div class="radio-option">
-            <input type="radio" id="prr_load_customer" name="prr_type" value="7000">
-            <label for="prr_load_customer">Погрузка силами заказчика, выгрузка манипулятором</label>
-        </div>
-        <div class="radio-option">
-            <input type="radio" id="prr_both_customer" name="prr_type" value="6000">
-            <label for="prr_both_customer">Погрузка и выгрузка силами заказчика</label>
-        </div>
-    </div>
-
-    <!-- Спойлер: топливо -->
-    <details>
-        <summary>⛽ Дополнительные настройки топлива (справочно)</summary>
-        <div class="input-group" style="margin-bottom: 0.8rem;">
-            <label><i>🛢️</i> Доп. расход на ПРР (работа мотора), литры</label>
+        <div class="input-group">
+            <label><i>📍</i> Расстояние (погрузка→выгрузка), км 
+                <span class="fuel-icon" data-tooltip="" id="singleFuelTooltip">⛽</span>
+            </label>
             <div class="slider-row">
-                <input type="range" id="extraFuelSlider" min="0" max="30" step="1" value="0">
-                <div class="value-display" id="extraFuelValue">0 л</div>
+                <input type="range" id="distanceSlider" min="0" max="300" step="5" value="0">
+                <input type="number" id="distanceNumber" class="number-input" min="0" value="0" step="1">
             </div>
-            <div style="font-size:0.7rem; margin-top:4px; color:#4a5b7a;">Рекомендуем 5–10 литров.</div>
         </div>
-        <div class="fuel-info" id="fuelInfo">
-            ⛽ Расход топлива: — литров (информационно)
+
+        <div class="checkbox-row">
+            <input type="checkbox" id="marketModeCheckbox">
+            <label>🏪 Погрузка с места базирования (строительный рынок <a href="https://yandex.ru/maps/?pt=37.347249,56.099172&z=17&l=map" target="_blank">Бабаиха</a>)</label>
         </div>
-    </details>
+
+        <div class="input-group" id="armThereGroup">
+            <label><i>🏭</i> Плечо (база → погрузка), км</label>
+            <div class="slider-row">
+                <input type="range" id="armThereSlider" min="0" max="300" step="5" value="0">
+                <input type="number" id="armThereNumber" class="number-input" min="0" value="0" step="1">
+            </div>
+        </div>
+
+        <div class="input-group" id="armBackGroup">
+            <label><i>🔄</i> Плечо возвратное (выгрузка → база), км</label>
+            <div class="slider-row">
+                <input type="range" id="armBackSlider" min="0" max="300" step="5" value="0">
+                <input type="number" id="armBackNumber" class="number-input" min="0" value="0" step="1">
+            </div>
+        </div>
+
+        <div class="radio-group" id="prrGroup">
+            <p>🧰 Условия погрузки/разгрузки:</p>
+            <div class="radio-option"><input type="radio" id="prr_self" name="prr_type" value="8000" checked><label for="prr_self">Погрузка и выгрузка манипулятором</label></div>
+            <div class="radio-option"><input type="radio" id="prr_load_customer" name="prr_type" value="7000"><label for="prr_load_customer">Погрузка силами заказчика, выгрузка манипулятором</label></div>
+            <div class="radio-option"><input type="radio" id="prr_both_customer" name="prr_type" value="6000"><label for="prr_both_customer">Погрузка и выгрузка силами заказчика</label></div>
+        </div>
+    </div>
+
+    <!-- Вкладка 2: Мультимаршрут -->
+    <div id="multiTab" class="tab-content">
+        <div class="input-group">
+            <label><i>📍</i> Общий пробег по всем маршрутам, км
+                <span class="fuel-icon" data-tooltip="" id="multiFuelTooltip">⛽</span>
+            </label>
+            <div class="slider-row">
+                <input type="range" id="multiDistanceSlider" min="0" max="300" step="5" value="0">
+                <input type="number" id="multiDistanceNumber" class="number-input" min="0" value="0" step="1">
+            </div>
+        </div>
+
+        <div class="multistop-counter">
+            <div class="label">➕ Дополнительные заезды:</div>
+            <div class="counter-controls">
+                <button id="multiDecBtn">−</button>
+                <span id="multiCount">0</span>
+                <button id="multiIncBtn">+</button>
+            </div>
+        </div>
+    </div>
 
     <button id="calcBtn">💰 Рассчитать стоимость</button>
 
@@ -398,32 +170,45 @@
             <button class="copy-btn" id="copyPhoneBtn">📋 Копировать номер</button>
         </div>
     </div>
-
-    <!-- Спойлер для примечания -->
-    <details class="note-spoiler">
-        <summary>ℹ️ Детали расчёта (справочно)</summary>
-        <div class="note-content">
-            * Обычный режим: цена = выбранная ставка ПРР + (плечо_туда + расстояние + плечо_обратно) × 85 ₽.<br>
-            Режим «С рынка»: плечи не учитываются, цена = тариф (8000₽ за 15 км +2000₽/15км) + стоимость топлива на пробег (только при расстоянии > 30 км).<br>
-            Расход топлива: 35 л/100 км, цена 76 ₽/л. Доп. расход на ПРР в режиме «С рынка» не учитывается.
-        </div>
-    </details>
 </div>
-
 <div id="toast" class="toast">Номер скопирован</div>
 
 <script>
+    // ----- Константы -----
     const COST_PER_KM = 85;
     const ROUND_STEP = 500;
     const FUEL_PER_100KM = 35;
-    const FUEL_PRICE = 76;
-
-    const MARKET_FIX = 8000;
+    const EXTRA_FUEL_PRR = 8;          // литров на ПРР
+    const MARKET_FIX = 7000;           // первые 15 км
     const MARKET_STEP_KM = 15;
-    const MARKET_STEP_PRICE = 2000;
+    const MARKET_STEP_PRICE = 2500;    // за каждые след. 15 км
+    const EXTRA_LOAD_PRICE = 6000;     // за доп. заезд в мультимаршруте
 
+    // Элементы DOM
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const singleTab = document.getElementById('singleTab');
+    const multiTab = document.getElementById('multiTab');
+
+    const distanceSlider = document.getElementById('distanceSlider');
+    const distanceNumber = document.getElementById('distanceNumber');
+    const marketModeCheck = document.getElementById('marketModeCheckbox');
+    const armThereSlider = document.getElementById('armThereSlider');
+    const armThereNumber = document.getElementById('armThereNumber');
+    const armBackSlider = document.getElementById('armBackSlider');
+    const armBackNumber = document.getElementById('armBackNumber');
+    const prrRadios = document.querySelectorAll('input[name="prr_type"]');
+
+    const multiDistanceSlider = document.getElementById('multiDistanceSlider');
+    const multiDistanceNumber = document.getElementById('multiDistanceNumber');
+    const multiCountSpan = document.getElementById('multiCount');
+    let multiExtraCount = 0;
+
+    const singleFuelTooltip = document.getElementById('singleFuelTooltip');
+    const multiFuelTooltip = document.getElementById('multiFuelTooltip');
+    const totalPriceSpan = document.getElementById('totalPrice');
+
+    // Вспомогательные функции
     function roundUpToStep(amount, step) {
-        if (step <= 0) return amount;
         return Math.ceil(amount / step) * step;
     }
 
@@ -440,105 +225,157 @@
     }
 
     function copyPhoneNumber() {
-        const phoneNumber = '+79371485565';
-        navigator.clipboard.writeText(phoneNumber).then(() => {
+        navigator.clipboard.writeText('+79371485565').then(() => {
             const toast = document.getElementById('toast');
             toast.style.opacity = '1';
-            setTimeout(() => {
-                toast.style.opacity = '0';
-            }, 2000);
-        }).catch(err => {
-            console.error('Ошибка копирования: ', err);
-            alert('Не удалось скопировать номер');
+            setTimeout(() => { toast.style.opacity = '0'; }, 2000);
+        }).catch(() => alert('Не удалось скопировать номер'));
+    }
+
+    // Синхронизация для ползунков (можно вводить числа >300, ползунок до 300)
+    function bindSliderWithNumberOverflow(slider, numberInput) {
+        slider.addEventListener('input', () => {
+            let val = parseInt(slider.value, 10);
+            numberInput.value = val;
+            updateAll();
+        });
+        numberInput.addEventListener('change', () => {
+            let val = parseFloat(numberInput.value);
+            if (isNaN(val)) val = 0;
+            val = Math.max(0, val);
+            numberInput.value = val;
+            if (val <= 300) slider.value = val;
+            else if (parseInt(slider.value,10) > 300) slider.value = 300;
+            updateAll();
+        });
+        numberInput.addEventListener('input', () => {
+            let val = parseFloat(numberInput.value);
+            if (isNaN(val)) val = 0;
+            if (val <= 300 && val >= 0) slider.value = val;
+            updateAll();
+        });
+        numberInput.value = slider.value;
+    }
+
+    function bindMultiSlider() {
+        multiDistanceSlider.addEventListener('input', () => {
+            multiDistanceNumber.value = multiDistanceSlider.value;
+            updateAll();
+        });
+        multiDistanceNumber.addEventListener('change', () => {
+            let val = parseFloat(multiDistanceNumber.value);
+            if (isNaN(val)) val = 0;
+            val = Math.max(0, val);
+            multiDistanceNumber.value = val;
+            if (val <= 300) multiDistanceSlider.value = val;
+            else if (multiDistanceSlider.value > 300) multiDistanceSlider.value = 300;
+            updateAll();
+        });
+        multiDistanceNumber.addEventListener('input', () => {
+            let val = parseFloat(multiDistanceNumber.value);
+            if (isNaN(val)) val = 0;
+            if (val <= 300 && val >= 0) multiDistanceSlider.value = val;
+            updateAll();
         });
     }
 
-    function updateUI() {
-        const marketMode = document.getElementById('marketModeCheckbox').checked;
-        let distance = parseInt(document.getElementById('distanceSlider').value, 10);
+    let activeTab = 'single';
 
-        const armThereSlider = document.getElementById('armThereSlider');
-        const armBackSlider = document.getElementById('armBackSlider');
-        const armThereGroup = document.getElementById('armThereGroup');
-        const armBackGroup = document.getElementById('armBackGroup');
-        const prrGroup = document.getElementById('prrGroup');
-        const radios = document.querySelectorAll('input[name="prr_type"]');
-
-        if (marketMode) {
-            armThereSlider.disabled = true;
-            armBackSlider.disabled = true;
-            armThereGroup.style.opacity = '0.5';
-            armBackGroup.style.opacity = '0.5';
-            prrGroup.classList.add('disabled-radio');
-            radios.forEach(r => r.disabled = true);
+    function switchTab(tabId) {
+        activeTab = tabId;
+        if (tabId === 'single') {
+            singleTab.classList.add('active');
+            multiTab.classList.remove('active');
         } else {
-            armThereSlider.disabled = false;
-            armBackSlider.disabled = false;
-            armThereGroup.style.opacity = '1';
-            armBackGroup.style.opacity = '1';
-            prrGroup.classList.remove('disabled-radio');
-            radios.forEach(r => r.disabled = false);
+            singleTab.classList.remove('active');
+            multiTab.classList.add('active');
         }
-
-        let armThere = marketMode ? 0 : parseInt(armThereSlider.value, 10);
-        let armBack = marketMode ? 0 : parseInt(armBackSlider.value, 10);
-        let extraFuel = parseInt(document.getElementById('extraFuelSlider').value, 10);
-
-        document.getElementById('distanceValue').innerText = distance + ' км';
-        document.getElementById('armThereValue').innerText = (marketMode ? 0 : armThere) + ' км';
-        document.getElementById('armBackValue').innerText = (marketMode ? 0 : armBack) + ' км';
-        document.getElementById('extraFuelValue').innerText = extraFuel + ' л';
-
-        let exactPrice;
-        let totalKm;
-
-        if (marketMode) {
-            const tariff = calculateMarketTariff(distance);
-            totalKm = distance;
-            const driveLiters = (totalKm / 100) * FUEL_PER_100KM;
-            const fuelCost = driveLiters * FUEL_PRICE;
-            if (distance > 30) {
-                exactPrice = tariff + fuelCost;
-            } else {
-                exactPrice = tariff;
-            }
-        } else {
-            totalKm = armThere + distance + armBack;
-            const basePrice = getBasePriceNormal();
-            exactPrice = basePrice + totalKm * COST_PER_KM;
-        }
-
-        const roundedPrice = roundUpToStep(exactPrice, ROUND_STEP);
-        document.getElementById('totalPrice').innerHTML = `${roundedPrice.toFixed(0)} <span>₽</span>`;
-
-        const driveLitersInfo = (totalKm / 100) * FUEL_PER_100KM;
-        const totalLitersInfo = driveLitersInfo + extraFuel;
-        const totalFuelRubInfo = totalLitersInfo * FUEL_PRICE;
-
-        const fuelInfoHtml = `
-            <p>⛽ <strong>Приблизительный расход топлива:</strong></p>
-            <p>🚛 На пробег (${totalKm.toFixed(1)} км) → ${driveLitersInfo.toFixed(1)} л<br>
-            🛠️ Доп. на ПРР → <strong>${extraFuel} л</strong><br>
-            🔥 <strong>Всего литров: ${totalLitersInfo.toFixed(1)} л</strong><br>
-            💸 Стоимость топлива (${FUEL_PRICE} ₽/л): ${totalFuelRubInfo.toFixed(2)} ₽<br>
-            <span style="font-size:0.75rem;">*Расход на пробег из расчёта ${FUEL_PER_100KM} л/100км.</span></p>
-        `;
-        document.getElementById('fuelInfo').innerHTML = fuelInfoHtml;
+        tabBtns.forEach(btn => {
+            if (btn.dataset.tab === tabId) btn.classList.add('active');
+            else btn.classList.remove('active');
+        });
+        updateAll();
     }
 
-    const sliders = ['distanceSlider', 'armThereSlider', 'armBackSlider', 'extraFuelSlider'];
-    sliders.forEach(id => {
-        const slider = document.getElementById(id);
-        slider.addEventListener('input', updateUI);
-        slider.addEventListener('change', updateUI);
-    });
-    const radios = document.querySelectorAll('input[name="prr_type"]');
-    radios.forEach(radio => radio.addEventListener('change', updateUI));
-    document.getElementById('marketModeCheckbox').addEventListener('change', updateUI);
-    document.getElementById('calcBtn').addEventListener('click', updateUI);
+    function updateAll() {
+        if (activeTab === 'single') {
+            const marketMode = marketModeCheck.checked;
+            let distance = parseFloat(distanceNumber.value) || 0;
+            let armThere = parseFloat(armThereNumber.value) || 0;
+            let armBack = parseFloat(armBackNumber.value) || 0;
+
+            const disable = marketMode;
+            armThereSlider.disabled = disable;
+            armThereNumber.disabled = disable;
+            armBackSlider.disabled = disable;
+            armBackNumber.disabled = disable;
+            document.getElementById('armThereGroup').style.opacity = disable ? '0.5' : '1';
+            document.getElementById('armBackGroup').style.opacity = disable ? '0.5' : '1';
+            const prrDiv = document.getElementById('prrGroup');
+            if (disable) prrDiv.classList.add('disabled-radio');
+            else prrDiv.classList.remove('disabled-radio');
+            prrRadios.forEach(r => r.disabled = disable);
+
+            let exactPrice, totalKmForFuel;
+            if (marketMode) {
+                // Тариф по шагам
+                const tariff = calculateMarketTariff(distance);
+                exactPrice = tariff;
+                // Топливо считается с возвратом (туда+обратно)
+                totalKmForFuel = distance * 2;
+            } else {
+                totalKmForFuel = armThere + distance + armBack;
+                const basePrice = getBasePriceNormal();
+                exactPrice = basePrice + totalKmForFuel * COST_PER_KM;
+            }
+
+            const rounded = roundUpToStep(exactPrice, ROUND_STEP);
+            totalPriceSpan.innerHTML = `${rounded.toFixed(0)} <span>₽</span>`;
+
+            const fuelTotal = (totalKmForFuel / 100) * FUEL_PER_100KM + EXTRA_FUEL_PRR;
+            singleFuelTooltip.setAttribute('data-tooltip', `⛽ Расход топлива: ${fuelTotal.toFixed(1)} л`);
+        } 
+        else { // Мультимаршрут
+            let distance = parseFloat(multiDistanceNumber.value) || 0;
+            let extraStops = multiExtraCount;
+            const exactPrice = 8000 + distance * COST_PER_KM + extraStops * EXTRA_LOAD_PRICE;
+            const rounded = roundUpToStep(exactPrice, ROUND_STEP);
+            totalPriceSpan.innerHTML = `${rounded.toFixed(0)} <span>₽</span>`;
+
+            const totalKm = distance;
+            const fuelTotal = (totalKm / 100) * FUEL_PER_100KM + EXTRA_FUEL_PRR * (1 + extraStops);
+            multiFuelTooltip.setAttribute('data-tooltip', `⛽ Расход топлива: ${fuelTotal.toFixed(1)} л`);
+        }
+    }
+
+    function updateMultiCounter(delta) {
+        let newVal = multiExtraCount + delta;
+        if (newVal < 0) newVal = 0;
+        if (newVal > 20) newVal = 20;
+        multiExtraCount = newVal;
+        multiCountSpan.innerText = multiExtraCount;
+        updateAll();
+    }
+
+    // Привязка событий
+    tabBtns.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+
+    bindSliderWithNumberOverflow(distanceSlider, distanceNumber);
+    bindSliderWithNumberOverflow(armThereSlider, armThereNumber);
+    bindSliderWithNumberOverflow(armBackSlider, armBackNumber);
+    
+    marketModeCheck.addEventListener('change', updateAll);
+    prrRadios.forEach(r => r.addEventListener('change', updateAll));
+
+    bindMultiSlider();
+    document.getElementById('multiIncBtn').addEventListener('click', () => updateMultiCounter(1));
+    document.getElementById('multiDecBtn').addEventListener('click', () => updateMultiCounter(-1));
+
+    document.getElementById('calcBtn').addEventListener('click', updateAll);
     document.getElementById('copyPhoneBtn').addEventListener('click', copyPhoneNumber);
 
-    updateUI();
+    updateAll();
+    switchTab('single');
 </script>
 </body>
 </html>
