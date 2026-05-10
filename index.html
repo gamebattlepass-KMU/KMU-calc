@@ -76,15 +76,15 @@
         .result { background: #f0f4fe; border-radius: 36px; padding: 1.2rem 1.4rem; text-align: center; }
         .total-cost { font-size: 2.5rem; font-weight: 800; color: #1e2f5e; word-break: break-word; }
         .total-cost span { font-size: 1.1rem; font-weight: 500; color: #4a5b7a; }
-        .driver-contact { margin-top: 16px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 10px; background: #e6f0ff; padding: 8px 16px; border-radius: 40px; }
-        .copy-btn { background: #1e2f5e; border: none; color: white; padding: 6px 14px; border-radius: 30px; font-size: 0.8rem; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin: 0; box-shadow: none; transform: none; width: auto; }
+        .copy-btn { background: #1e2f5e; color: white; border: none; padding: 10px 20px; border-radius: 40px; font-size: 1rem; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: 0.2s; margin-top: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); width: auto; }
+        .copy-btn:active { transform: scale(0.96); }
         .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #1e2f5e; color: white; padding: 8px 20px; border-radius: 40px; font-size: 0.85rem; z-index: 1000; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
         .multistop-counter { display: flex; flex-direction: column; align-items: center; gap: 12px; background: #f8fafc; padding: 16px; border-radius: 48px; margin-top: 1rem; }
         .counter-controls { display: flex; align-items: center; justify-content: center; gap: 20px; }
         .counter-controls button { width: auto; margin: 0; padding: 8px 20px; background: #f5b042; color: #1e2f5e; box-shadow: none; font-weight: bold; font-size: 1.2rem; }
         .counter-controls span { font-size: 1.6rem; font-weight: 700; min-width: 50px; text-align: center; }
         .multistop-counter .label { font-weight: 600; color: #1e2f5e; }
-        @media (max-width: 550px) { .card { padding: 1.2rem; } .total-cost { font-size: 2rem; } .slider-row { flex-direction: column; align-items: stretch; } .tab-btn { padding: 8px 12px; font-size: 0.9rem; } .fuel-icon:hover::after { white-space: normal; width: 200px; text-align: center; } }
+        @media (max-width: 550px) { .card { padding: 1.2rem; } .total-cost { font-size: 2rem; } .slider-row { flex-direction: column; align-items: stretch; } .tab-btn { padding: 8px 12px; font-size: 0.9rem; } }
     </style>
 </head>
 <body>
@@ -165,10 +165,8 @@
 
     <div class="result">
         <div class="total-cost" id="totalPrice">— <span>₽</span></div>
-        <div class="driver-contact">
-            <span class="driver-text">📞 Связаться с водителем</span>
-            <button class="copy-btn" id="copyPhoneBtn">📋 Копировать номер</button>
-        </div>
+        <!-- Только кнопка копирования, без текста номера -->
+        <button class="copy-btn" id="copyPhoneBtn">📋 Копировать номер телефона</button>
     </div>
 </div>
 <div id="toast" class="toast">Номер скопирован</div>
@@ -178,7 +176,7 @@
     const COST_PER_KM = 85;
     const ROUND_STEP = 500;
     const FUEL_PER_100KM = 35;
-    const EXTRA_FUEL_PRR = 8;          // литров на ПРР
+    const EXTRA_FUEL_PRR = 8;
     const MARKET_FIX = 7000;           // первые 15 км
     const MARKET_STEP_KM = 15;
     const MARKET_STEP_PRICE = 2500;    // за каждые след. 15 км
@@ -225,14 +223,15 @@
     }
 
     function copyPhoneNumber() {
-        navigator.clipboard.writeText('+79371485565').then(() => {
+        const phoneNumber = '+79371485565';
+        navigator.clipboard.writeText(phoneNumber).then(() => {
             const toast = document.getElementById('toast');
             toast.style.opacity = '1';
             setTimeout(() => { toast.style.opacity = '0'; }, 2000);
         }).catch(() => alert('Не удалось скопировать номер'));
     }
 
-    // Синхронизация для ползунков (можно вводить числа >300, ползунок до 300)
+    // Синхронизация для ползунков (можно вводить числа >300)
     function bindSliderWithNumberOverflow(slider, numberInput) {
         slider.addEventListener('input', () => {
             let val = parseInt(slider.value, 10);
@@ -318,10 +317,8 @@
 
             let exactPrice, totalKmForFuel;
             if (marketMode) {
-                // Тариф по шагам
                 const tariff = calculateMarketTariff(distance);
                 exactPrice = tariff;
-                // Топливо считается с возвратом (туда+обратно)
                 totalKmForFuel = distance * 2;
             } else {
                 totalKmForFuel = armThere + distance + armBack;
