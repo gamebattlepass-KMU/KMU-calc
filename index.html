@@ -98,7 +98,7 @@
 
     <!-- Вкладка 1: Одиночный рейс -->
     <div id="singleTab" class="tab-content active">
-        <div class="sub">⚙️ Условия одиночной перевозки (в полях можно вводить выражения, например 206+174+56)</div>
+        <div class="sub">⚙️ Условия одиночной перевозки</div>
 
         <div class="input-group">
             <label><i>📍</i> Расстояние (погрузка→выгрузка), км 
@@ -106,7 +106,7 @@
             </label>
             <div class="slider-row">
                 <input type="range" id="distanceSlider" min="0" max="300" step="5" value="0">
-                <input type="text" id="distanceNumber" class="number-input" inputmode="numeric" value="0" style="text-align:center;">
+                <input type="number" id="distanceNumber" class="number-input" min="0" value="0" step="1">
             </div>
         </div>
 
@@ -119,7 +119,7 @@
             <label><i>🏭</i> Плечо (база → погрузка), км</label>
             <div class="slider-row">
                 <input type="range" id="armThereSlider" min="0" max="300" step="5" value="0">
-                <input type="text" id="armThereNumber" class="number-input" inputmode="numeric" value="0" style="text-align:center;">
+                <input type="number" id="armThereNumber" class="number-input" min="0" value="0" step="1">
             </div>
         </div>
 
@@ -127,7 +127,7 @@
             <label><i>🔄</i> Плечо возвратное (выгрузка → база), км</label>
             <div class="slider-row">
                 <input type="range" id="armBackSlider" min="0" max="300" step="5" value="0">
-                <input type="text" id="armBackNumber" class="number-input" inputmode="numeric" value="0" style="text-align:center;">
+                <input type="number" id="armBackNumber" class="number-input" min="0" value="0" step="1">
             </div>
         </div>
 
@@ -147,7 +147,7 @@
             </label>
             <div class="slider-row">
                 <input type="range" id="multiDistanceSlider" min="0" max="300" step="5" value="0">
-                <input type="text" id="multiDistanceNumber" class="number-input" inputmode="numeric" value="0" style="text-align:center;">
+                <input type="number" id="multiDistanceNumber" class="number-input" min="0" value="0" step="1">
             </div>
         </div>
 
@@ -176,10 +176,11 @@
     const ROUND_STEP = 500;
     const FUEL_PER_100KM = 35;
     const EXTRA_FUEL_PRR = 8;
-    const MARKET_FIX = 7000;           // первые 15 км
+    const FUEL_PRICE = 80;               // цена топлива 80 руб/л
+    const MARKET_FIX = 7000;           
     const MARKET_STEP_KM = 15;
-    const MARKET_STEP_PRICE = 2500;    // за каждые след. 15 км
-    const EXTRA_LOAD_PRICE = 6000;     // за доп. заезд в мультимаршруте
+    const MARKET_STEP_PRICE = 2500;    
+    const EXTRA_LOAD_PRICE = 6000;     
 
     // Элементы DOM
     const tabBtns = document.querySelectorAll('.tab-btn');
@@ -204,89 +205,112 @@
     const multiFuelTooltip = document.getElementById('multiFuelTooltip');
     const totalPriceSpan = document.getElementById('totalPrice');
 
-    // ----- Функция для вычисления выражения (безопасное, только базовые арифметические операции)
-    function evaluateExpression(expr) {
-        expr = expr.replace(/\s/g, '');
-        if (/^[0-9+\-*/.()]+$/.test(expr)) {
-            try {
-                let result = Function('"use strict"; return (' + expr + ')')();
-                if (typeof result === 'number' && isFinite(result)) {
-                    return Math.round(result);
-                }
-            } catch(e) { /* игнорируем */ }
+    // Функция для вычисления суммы выражения через +
+    function evaluateSumExpression(str) {
+        if (!str) return NaN;
+        // убираем пробелы
+        let cleaned = str.replace(/\s/g, '');
+        // если есть любые символы кроме цифр, точек и +, то не вычисляем
+        if (!/^[\d\.\+]+$/.test(cleaned)) return NaN;
+        let parts = cleaned.split('+');
+        let sum = 0;
+        for (let part of parts) {
+            let num = parseFloat(part);
+            if (isNaN(num)) return NaN;
+            sum += num;
         }
-        return null;
+        return sum;
     }
 
-    // Универсальная функция для обработки текстового поля: при потере фокуса или Enter вычисляем выражение
-    function setupMathInput(textInput, slider, minVal=0, maxVal=Infinity, step=1) {
-        // При потере фокуса (blur) или нажатии Enter вычисляем и обновляем
-        const processValue = () => {
-            let raw = textInput.value.trim();
-            let numericValue;
-            if (raw === "") numericValue = 0;
-            else {
-                let evaluated = evaluateExpression(raw);
-                if (evaluated !== null) {
-                    numericValue = evaluated;
-                } else {
-                    // если не удалось вычислить, пробуем преобразовать к числу напрямую
-                    let direct = parseFloat(raw);
-                    if (!isNaN(direct)) numericValue = direct;
-                    else {
-                        // некорректный ввод – оставляем предыдущее значение
-                        textInput.value = slider.value;
-                        return;
-                    }
-                }
-            }
-            // Ограничения
-            if (numericValue < minVal) numericValue = minVal;
-            if (numericValue > maxVal) numericValue = maxVal;
-            // Округление до шага
-            numericValue = Math.round(numericValue / step) * step;
-            textInput.value = numericValue;
-            slider.value = numericValue;
-            updateAll();
-        };
-        textInput.addEventListener('blur', processValue);
-        textInput.addEventListener('keypress', (e) => {
+    // Привязка поля ввода с поддержкой суммы через Enter
+    function bindNumberWithSumOnEnter(numberInput, sliderInput) {
+        numberInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
+                let rawValue = numberInput.value.trim();
+                let sum = evaluateSumExpression(rawValue);
+                if (!isNaN(sum) && sum >= 0) {
+                    numberInput.value = sum;
+                    if (sliderInput && sum <= 300) sliderInput.value = sum;
+                    else if (sliderInput && sum > 300) {
+                        if (parseInt(sliderInput.value,10) > 300) sliderInput.value = 300;
+                    }
+                    updateAll();
+                } else if (rawValue !== '') {
+                    // если выражение некорректное, можно показать ошибку (тихо игнорируем)
+                }
                 e.preventDefault();
-                processValue();
             }
         });
-        // Инициализация
-        textInput.value = slider.value;
     }
 
-    // Обычная синхронизация для ползунков, где нет математики через blur? (но мы всё равно будем использовать setupMathInput)
-    // Для мультимаршрута тоже применяем математический ввод
-    function bindSliderWithNumberOverflow(slider, numberInput, minVal=0, maxVal=Infinity, step=5) {
-        // При перемещении ползунка обновляем текстовое поле
+    // Синхронизация для ползунков (можно вводить числа >300)
+    function bindSliderWithNumberOverflow(slider, numberInput) {
         slider.addEventListener('input', () => {
             let val = parseInt(slider.value, 10);
             numberInput.value = val;
             updateAll();
         });
-        // Ввод через setupMathInput уже обработает изменения, но нужно также вызывать updateAll при ручных изменениях?
-        // setupMathInput уже вызывает processValue -> updateAll, а также при ручном вводе без потери фокуса? Нет, только потеря фокуса и Enter.
-        // Дополнительно: при ручном вводе каждого символа не обновляем, только по окончании.
-        // Также синхронизация при старте
+        numberInput.addEventListener('change', () => {
+            let val = parseFloat(numberInput.value);
+            if (isNaN(val)) val = 0;
+            val = Math.max(0, val);
+            numberInput.value = val;
+            if (val <= 300) slider.value = val;
+            else if (parseInt(slider.value,10) > 300) slider.value = 300;
+            updateAll();
+        });
+        numberInput.addEventListener('input', () => {
+            let val = parseFloat(numberInput.value);
+            if (isNaN(val)) val = 0;
+            if (val <= 300 && val >= 0) slider.value = val;
+            updateAll();
+        });
         numberInput.value = slider.value;
-        setupMathInput(numberInput, slider, minVal, maxVal, step);
+        bindNumberWithSumOnEnter(numberInput, slider);
     }
 
-    // Для мультимаршрута отдельный слайдер
+    function bindMultiNumberWithSum(numberInput, sliderInput) {
+        numberInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                let rawValue = numberInput.value.trim();
+                let sum = evaluateSumExpression(rawValue);
+                if (!isNaN(sum) && sum >= 0) {
+                    numberInput.value = sum;
+                    if (sliderInput && sum <= 300) sliderInput.value = sum;
+                    else if (sliderInput && sum > 300) {
+                        if (parseInt(sliderInput.value,10) > 300) sliderInput.value = 300;
+                    }
+                    updateAll();
+                }
+                e.preventDefault();
+            }
+        });
+    }
+
     function bindMultiSlider() {
         multiDistanceSlider.addEventListener('input', () => {
             multiDistanceNumber.value = multiDistanceSlider.value;
             updateAll();
         });
-        setupMathInput(multiDistanceNumber, multiDistanceSlider, 0, Infinity, 5);
+        multiDistanceNumber.addEventListener('change', () => {
+            let val = parseFloat(multiDistanceNumber.value);
+            if (isNaN(val)) val = 0;
+            val = Math.max(0, val);
+            multiDistanceNumber.value = val;
+            if (val <= 300) multiDistanceSlider.value = val;
+            else if (multiDistanceSlider.value > 300) multiDistanceSlider.value = 300;
+            updateAll();
+        });
+        multiDistanceNumber.addEventListener('input', () => {
+            let val = parseFloat(multiDistanceNumber.value);
+            if (isNaN(val)) val = 0;
+            if (val <= 300 && val >= 0) multiDistanceSlider.value = val;
+            updateAll();
+        });
+        multiDistanceNumber.value = multiDistanceSlider.value;
+        bindMultiNumberWithSum(multiDistanceNumber, multiDistanceSlider);
     }
 
-    // Вспомогательные функции
     function roundUpToStep(amount, step) {
         return Math.ceil(amount / step) * step;
     }
@@ -364,7 +388,8 @@
             totalPriceSpan.innerHTML = `${rounded.toFixed(0)} <span>₽</span>`;
 
             const fuelTotal = (totalKmForFuel / 100) * FUEL_PER_100KM + EXTRA_FUEL_PRR;
-            singleFuelTooltip.setAttribute('data-tooltip', `⛽ Расход топлива: ${fuelTotal.toFixed(1)} л`);
+            const fuelCostRub = fuelTotal * FUEL_PRICE;
+            singleFuelTooltip.setAttribute('data-tooltip', `⛽ Расход топлива: ${fuelTotal.toFixed(1)} л (≈ ${fuelCostRub.toFixed(2)} ₽ по ${FUEL_PRICE} ₽/л)`);
         } 
         else { // Мультимаршрут
             let distance = parseFloat(multiDistanceNumber.value) || 0;
@@ -375,7 +400,8 @@
 
             const totalKm = distance;
             const fuelTotal = (totalKm / 100) * FUEL_PER_100KM + EXTRA_FUEL_PRR * (1 + extraStops);
-            multiFuelTooltip.setAttribute('data-tooltip', `⛽ Расход топлива: ${fuelTotal.toFixed(1)} л`);
+            const fuelCostRub = fuelTotal * FUEL_PRICE;
+            multiFuelTooltip.setAttribute('data-tooltip', `⛽ Расход топлива: ${fuelTotal.toFixed(1)} л (≈ ${fuelCostRub.toFixed(2)} ₽ по ${FUEL_PRICE} ₽/л)`);
         }
     }
 
@@ -388,18 +414,20 @@
         updateAll();
     }
 
-    // Инициализация с поддержкой математических выражений
-    bindSliderWithNumberOverflow(distanceSlider, distanceNumber, 0, Infinity, 5);
-    bindSliderWithNumberOverflow(armThereSlider, armThereNumber, 0, Infinity, 5);
-    bindSliderWithNumberOverflow(armBackSlider, armBackNumber, 0, Infinity, 5);
-    bindMultiSlider();
-
-    // События
+    // Привязка событий
     tabBtns.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+
+    bindSliderWithNumberOverflow(distanceSlider, distanceNumber);
+    bindSliderWithNumberOverflow(armThereSlider, armThereNumber);
+    bindSliderWithNumberOverflow(armBackSlider, armBackNumber);
+    
     marketModeCheck.addEventListener('change', updateAll);
     prrRadios.forEach(r => r.addEventListener('change', updateAll));
+
+    bindMultiSlider();
     document.getElementById('multiIncBtn').addEventListener('click', () => updateMultiCounter(1));
     document.getElementById('multiDecBtn').addEventListener('click', () => updateMultiCounter(-1));
+
     document.getElementById('calcBtn').addEventListener('click', updateAll);
     document.getElementById('copyPhoneBtn').addEventListener('click', copyPhoneNumber);
 
